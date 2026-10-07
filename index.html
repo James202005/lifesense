@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LifeSense</title>
+<meta name="description" content="LifeSense live occupancy dashboard: this page opens whichever of its addresses is working.">
+<style>
+  :root { --bg: #f5f7fa; --card: #ffffff; --text: #17202b; --muted: #5b6878; --accent: #1f6feb; --border: #d8dee6; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f141a; --card: #18202a; --text: #e6edf3; --muted: #9aa7b4; --accent: #4c8dff; --border: #2a3542; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 16px;
+         background: var(--bg); color: var(--text);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { width: 100%; max-width: 420px; background: var(--card); border: 1px solid var(--border);
+         border-radius: 12px; padding: 28px 24px; }
+  h1 { margin: 0 0 4px; font-size: 1.5rem; }
+  p { margin: 0 0 16px; color: var(--muted); }
+  #status { color: var(--text); min-height: 1.5em; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  a.link { display: block; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px;
+           color: var(--accent); text-decoration: none; overflow-wrap: anywhere; }
+  a.link:hover, a.link:focus-visible { border-color: var(--accent); outline: none; }
+  small { display: block; margin-top: 16px; color: var(--muted); font-size: .8rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>LifeSense</h1>
+  <p>Live occupancy dashboard</p>
+  <p id="status" role="status">Finding a working address…</p>
+  <ul id="links"></ul>
+  <small>Updated 7 Oct 2026, 11:24. Sign in with your LifeSense account after the dashboard opens.</small>
+</main>
+<script>
+  // The laptop rewrites this list whenever an address changes.
+  const LINKS = [{"name":"LifeSense","url":"https://overcome-designing-totals-franchise.trycloudflare.com"},{"name":"LifeSense (Tailscale address)","url":"https://lifesense.tail430c82.ts.net"}];
+  const status = document.getElementById('status');
+  const list = document.getElementById('links');
+  for (const link of LINKS) {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.className = 'link';
+    a.href = link.url + '/';
+    a.textContent = link.name;
+    li.appendChild(a);
+    list.appendChild(li);
+  }
+  // A cross-site request with mode 'no-cors' resolves when the server answers
+  // at all and rejects when it cannot be reached, which is all this needs.
+  function reachable(url, ms) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), ms);
+    return fetch(url + '/api/health?probe=' + Date.now(), { mode: 'no-cors', cache: 'no-store', signal: ctl.signal })
+      .then(() => true, () => false)
+      .finally(() => clearTimeout(timer));
+  }
+  (async () => {
+    for (const link of LINKS) {
+      status.textContent = 'Trying ' + link.name + '…';
+      if (await reachable(link.url, 7000)) {
+        status.textContent = 'Opening ' + link.name + '…';
+        location.replace(link.url + '/');
+        return;
+      }
+    }
+    status.textContent = 'No address answered just now. Try one of these, or reload in a minute:';
+  })();
+</script>
+</body>
+</html>
